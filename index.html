@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>AG Habit Tracker · Customizer</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #FAF6EF;
+    --panel: #FFFFFF;
+    --ink: #2E2823;
+    --ink-soft: #8A7B69;
+    --line: #E5DDCF;
+    --font-serif: 'Cormorant Garamond', Georgia, serif;
+    --font-sans: 'Jost', 'Helvetica Neue', sans-serif;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: var(--bg);
+    font-family: var(--font-sans);
+    color: var(--ink);
+    min-height: 100vh;
+  }
+  .wrap {
+    display: grid;
+    grid-template-columns: 380px 1fr;
+    min-height: 100vh;
+  }
+  @media (max-width: 860px) {
+    .wrap { grid-template-columns: 1fr; }
+  }
+
+  .panel {
+    background: var(--panel);
+    padding: 32px 28px 60px;
+    border-right: 1px solid var(--line);
+    overflow-y: auto;
+  }
+  h1 {
+    font-family: var(--font-serif);
+    font-weight: 600;
+    font-size: 26px;
+    margin-bottom: 4px;
+  }
+  .sub {
+    font-size: 12.5px;
+    color: var(--ink-soft);
+    margin-bottom: 28px;
+    line-height: 1.5;
+  }
+
+  .field { margin-bottom: 22px; }
+  label {
+    display: block;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    margin-bottom: 8px;
+  }
+  .hint {
+    font-size: 11.5px;
+    color: var(--ink-soft);
+    margin-top: 6px;
+    line-height: 1.4;
+  }
+
+  input[type="text"] {
+    width: 100%;
+    font-family: var(--font-sans);
+    font-size: 13.5px;
+    color: var(--ink);
+    background: var(--bg);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 9px 11px;
+  }
+  input[type="text"]:focus { outline: 2px solid #B4854F; outline-offset: 1px; }
+
+  .habit-row {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 8px;
+  }
+  .habit-row input { flex: 1; }
+  .remove-btn {
+    width: 34px;
+    flex-shrink: 0;
+    border: 1px solid var(--line);
+    background: var(--bg);
+    border-radius: 6px;
+    cursor: pointer;
+    color: var(--ink-soft);
+    font-size: 16px;
+    line-height: 1;
+  }
+  .remove-btn:hover { background: #F2E8DA; color: var(--ink); }
+
+  .add-btn {
+    width: 100%;
+    padding: 9px;
+    border: 1px dashed var(--line);
+    background: transparent;
+    border-radius: 6px;
+    color: var(--ink-soft);
+    font-family: var(--font-sans);
+    font-size: 12.5px;
+    cursor: pointer;
+    margin-top: 4px;
+  }
+  .add-btn:hover { background: #F2E8DA; color: var(--ink); }
+
+  .toggles { display: flex; gap: 8px; }
+  .toggle {
+    flex: 1;
+    padding: 9px;
+    border: 1px solid var(--line);
+    background: var(--bg);
+    border-radius: 6px;
+    font-family: var(--font-sans);
+    font-size: 12.5px;
+    color: var(--ink-soft);
+    cursor: pointer;
+  }
+  .toggle.active {
+    background: #2E2823;
+    border-color: #2E2823;
+    color: #FAF6EF;
+  }
+
+  .scheme-grid {
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 8px;
+  }
+  .scheme-swatch {
+    aspect-ratio: 1;
+    border-radius: 8px;
+    border: 2px solid transparent;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    position: relative;
+  }
+  .scheme-swatch.active { border-color: #2E2823; }
+  .scheme-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+  }
+
+  .slider-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  input[type="range"] { flex: 1; accent-color: #B4854F; }
+  .slider-value {
+    font-size: 12px;
+    color: var(--ink-soft);
+    width: 42px;
+    text-align: right;
+    flex-shrink: 0;
+  }
+
+  .copy-btn {
+    width: 100%;
+    padding: 13px;
+    background: #2E2823;
+    color: #FAF6EF;
+    border: none;
+    border-radius: 6px;
+    font-family: var(--font-sans);
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    cursor: pointer;
+    margin-top: 8px;
+  }
+  .copy-btn:hover { background: #4A4136; }
+  .copy-btn.copied { background: #7A8A6E; }
+
+  .url-box {
+    font-family: monospace;
+    font-size: 10.5px;
+    color: var(--ink-soft);
+    background: var(--bg);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 8px 10px;
+    word-break: break-all;
+    margin-top: 10px;
+    max-height: 90px;
+    overflow-y: auto;
+  }
+
+  .preview {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px;
+  }
+  .preview-frame-wrap {
+    width: min(420px, 90vw);
+    height: min(460px, 70vh);
+  }
+  iframe {
+    width: 100%;
+    height: 100%;
+    border: none;
+  }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <div class="panel">
+    <h1>Habit Tracker</h1>
+    <div class="sub">Set your habits once and embed. The grid checks off by day and clears itself automatically at the start of each new week, right in the visitor's browser.</div>
+
+    <div class="field">
+      <label>Card title</label>
+      <input type="text" id="titleInput" value="This Week">
+    </div>
+
+    <div class="field">
+      <label>Habits</label>
+      <div id="habitList"></div>
+      <button type="button" class="add-btn" id="addHabit">+ Add habit</button>
+    </div>
+
+    <div class="field">
+      <label>Week starts on</label>
+      <div class="toggles">
+        <button type="button" class="toggle active" id="startMonday">Monday</button>
+        <button type="button" class="toggle" id="startSunday">Sunday</button>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Color scheme</label>
+      <div class="scheme-grid" id="schemeGrid"></div>
+    </div>
+
+    <div class="field">
+      <label for="radiusRange">Corner rounding</label>
+      <div class="slider-row">
+        <input type="range" id="radiusRange" min="0" max="40" value="24" step="2">
+        <span class="slider-value" id="radiusValue">24px</span>
+      </div>
+    </div>
+
+    <div class="field">
+      <label for="sizeRange">Text size</label>
+      <div class="slider-row">
+        <input type="range" id="sizeRange" min="60" max="160" value="100" step="5">
+        <span class="slider-value" id="sizeValue">100%</span>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Drop shadow</label>
+      <div class="toggles">
+        <button type="button" class="toggle active" id="shadowOn">Show</button>
+        <button type="button" class="toggle" id="shadowOff">Hide</button>
+      </div>
+    </div>
+
+    <button type="button" class="copy-btn" id="copyBtn">Copy embed URL</button>
+    <div class="url-box" id="urlBox"></div>
+    <div class="hint">Paste that URL into a Notion embed block (type <code>/embed</code>, then paste the link) and drag it to whatever size you like.</div>
+  </div>
+
+  <div class="preview">
+    <div class="preview-frame-wrap">
+      <iframe id="previewFrame" src=""></iframe>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   Replace this with wherever tracker.html ends up living,
+   e.g. https://your-site.netlify.app/ag-habit-tracker/tracker.html
+   ============================================================ */
+const RENDERER_URL = 'tracker.html';
+
+const SCHEMES = [
+  { name: 'Sage',      card: 'A6A38B', text: 'FFFFFF', accent: 'E9E7DE' },
+  { name: 'Dark Mode', card: '1A1A1A', text: 'F5F1E8', accent: 'C9C2B4' },
+  { name: 'Blush',     card: 'D8BFB6', text: 'FFFFFF', accent: 'FFFFFF' },
+  { name: 'Cream',     card: 'FAF6EF', text: '2E2823', accent: '8A7B69' },
+  { name: 'Caramel',   card: 'B4854F', text: 'FFFFFF', accent: 'F5EFE4' },
+  { name: 'Charcoal',  card: '2E2823', text: 'FAF6EF', accent: 'B4854F' }
+];
+
+let schemeIdx = 3; // Cream default
+let startDay = 'monday';
+let shadowOn = true;
+
+const habitList = document.getElementById('habitList');
+const DEFAULT_HABITS = ['Drink Water', 'Move My Body', 'Read'];
+
+function makeHabitRow(value) {
+  const row = document.createElement('div');
+  row.className = 'habit-row';
+  row.innerHTML = `
+    <input type="text" class="habit-input" value="${value.replace(/"/g,'&quot;')}" placeholder="Habit name">
+    <button type="button" class="remove-btn" aria-label="Remove">&times;</button>
+  `;
+  row.querySelector('.habit-input').addEventListener('input', update);
+  row.querySelector('.remove-btn').addEventListener('click', () => {
+    if (habitList.children.length > 1) {
+      row.remove();
+      update();
+    }
+  });
+  return row;
+}
+
+DEFAULT_HABITS.forEach(h => habitList.appendChild(makeHabitRow(h)));
+
+document.getElementById('addHabit').addEventListener('click', () => {
+  if (habitList.children.length >= 8) return;
+  habitList.appendChild(makeHabitRow(''));
+  update();
+});
+
+const schemeGrid = document.getElementById('schemeGrid');
+SCHEMES.forEach((s, i) => {
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.className = 'scheme-swatch' + (i === schemeIdx ? ' active' : '');
+  btn.style.background = '#' + s.card;
+  btn.title = s.name;
+  btn.innerHTML = `<span class="scheme-dot" style="background:#${s.accent};"></span><span class="scheme-dot" style="background:#${s.text};"></span>`;
+  btn.addEventListener('click', () => {
+    schemeIdx = i;
+    [...schemeGrid.children].forEach(c => c.classList.remove('active'));
+    btn.classList.add('active');
+    update();
+  });
+  schemeGrid.appendChild(btn);
+});
+
+document.getElementById('startMonday').addEventListener('click', e => {
+  startDay = 'monday';
+  toggleGroup('startMonday', 'startSunday', e.target);
+  update();
+});
+document.getElementById('startSunday').addEventListener('click', e => {
+  startDay = 'sunday';
+  toggleGroup('startSunday', 'startMonday', e.target);
+  update();
+});
+document.getElementById('shadowOn').addEventListener('click', e => {
+  shadowOn = true;
+  toggleGroup('shadowOn', 'shadowOff', e.target);
+  update();
+});
+document.getElementById('shadowOff').addEventListener('click', e => {
+  shadowOn = false;
+  toggleGroup('shadowOff', 'shadowOn', e.target);
+  update();
+});
+
+function toggleGroup(activeId, inactiveId, activeEl) {
+  document.getElementById(activeId).classList.add('active');
+  document.getElementById(inactiveId).classList.remove('active');
+}
+
+const radiusRange = document.getElementById('radiusRange');
+const radiusValue = document.getElementById('radiusValue');
+radiusRange.addEventListener('input', () => {
+  radiusValue.textContent = radiusRange.value + 'px';
+  update();
+});
+
+const sizeRange = document.getElementById('sizeRange');
+const sizeValue = document.getElementById('sizeValue');
+sizeRange.addEventListener('input', () => {
+  sizeValue.textContent = sizeRange.value + '%';
+  update();
+});
+
+const titleInput = document.getElementById('titleInput');
+titleInput.addEventListener('input', update);
+
+const previewFrame = document.getElementById('previewFrame');
+const urlBox = document.getElementById('urlBox');
+const copyBtn = document.getElementById('copyBtn');
+
+function buildUrl() {
+  const habits = [...habitList.querySelectorAll('.habit-input')]
+    .map(i => i.value.trim())
+    .filter(Boolean);
+  const scheme = SCHEMES[schemeIdx];
+
+  const params = new URLSearchParams();
+  if (habits.length) params.set('habits', habits.join('|'));
+  params.set('start', startDay);
+  params.set('title', titleInput.value || 'This Week');
+  params.set('card', scheme.card);
+  params.set('text', scheme.text);
+  params.set('accent', scheme.accent);
+  params.set('radius', radiusRange.value);
+  params.set('size', sizeRange.value);
+  if (!shadowOn) params.set('shadow', 'false');
+
+  return RENDERER_URL + '?' + params.toString();
+}
+
+function update() {
+  const url = buildUrl();
+  previewFrame.src = url;
+  urlBox.textContent = new URL(url, window.location.href).href;
+}
+
+copyBtn.addEventListener('click', () => {
+  const fullUrl = new URL(buildUrl(), window.location.href).href;
+  navigator.clipboard.writeText(fullUrl).then(() => {
+    copyBtn.textContent = 'Copied!';
+    copyBtn.classList.add('copied');
+    setTimeout(() => {
+      copyBtn.textContent = 'Copy embed URL';
+      copyBtn.classList.remove('copied');
+    }, 1600);
+  });
+});
+
+update();
+</script>
+</body>
+</html>

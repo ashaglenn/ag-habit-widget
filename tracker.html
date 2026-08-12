@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>AG Habit Tracker</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   AG HABIT TRACKER
+   No database, no login: habits live in the embed URL, and
+   checkbox state lives in this browser's localStorage. The grid
+   clears itself automatically at the start of each new week,
+   the same "no backend" philosophy as the rest of the AG suite.
+   ============================================================ */
+:root {
+  color-scheme: light dark;
+
+  /* CARD COLOR */
+  --card-color: #FAF6EF;
+  /* TEXT COLOR: habit names, day letters */
+  --text-color: #2E2823;
+  /* ACCENT COLOR: checked boxes, progress line */
+  --accent-color: #8A7B69;
+
+  /* CARD CORNER ROUNDNESS */
+  --card-radius: 24px;
+
+  /* TEXT SIZE multiplier, set by the ?size= parameter */
+  --size-scale: 1;
+
+  /* SHADOW: tight and dark, like a sticker sitting flat on the page */
+  --shadow-tint: rgba(20,16,12,.46);
+  --shadow-gap: 1.6vmin;
+
+  /* FONTS */
+  --font-serif: 'Cormorant Garamond', Georgia, serif;
+  --font-sans: 'Jost', 'Helvetica Neue', sans-serif;
+}
+/* ============================================================ */
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body {
+  height: 100%;
+  background: transparent;
+  overflow: hidden;
+}
+
+body {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-sans);
+  padding: var(--shadow-gap);
+}
+
+.card {
+  width: 100%;
+  height: 100%;
+  background: var(--card-color);
+  border-radius: var(--card-radius);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  padding: 5.5vmin 6vmin;
+  box-shadow:
+    0 .5vmin 1.3vmin -.6vmin var(--shadow-tint),
+    0 .12vmin .35vmin rgba(20,16,12,.3);
+}
+.card.flat { box-shadow: none; }
+
+.title {
+  font-family: var(--font-serif);
+  font-weight: 600;
+  font-size: calc(clamp(16px, 4.6vmin, 28px) * var(--size-scale));
+  color: var(--text-color);
+  margin-bottom: 3.2vmin;
+  flex-shrink: 0;
+}
+
+.grid-wrap {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: auto;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) repeat(7, auto);
+  align-items: center;
+  column-gap: 1.6vmin;
+  padding: 1.1vmin 0;
+}
+
+.head-row {
+  padding-bottom: 1.4vmin;
+  border-bottom: 1px solid color-mix(in srgb, var(--text-color) 16%, transparent);
+  margin-bottom: 0.6vmin;
+}
+
+.habit-name {
+  font-family: var(--font-sans);
+  font-weight: 400;
+  font-size: calc(clamp(11px, 2.9vmin, 15px) * var(--size-scale));
+  color: var(--text-color);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.day-label {
+  font-family: var(--font-sans);
+  font-weight: 500;
+  font-size: calc(clamp(8px, 2vmin, 11px) * var(--size-scale));
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent-color);
+  text-align: center;
+  width: clamp(16px, 4vmin, 26px);
+}
+
+.day-label.today {
+  color: var(--text-color);
+  font-weight: 600;
+}
+
+.box {
+  width: clamp(16px, 4vmin, 26px);
+  height: clamp(16px, 4vmin, 26px);
+  border-radius: 30%;
+  border: 1.5px solid color-mix(in srgb, var(--text-color) 32%, transparent);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background .12s ease, border-color .12s ease, transform .08s ease;
+  background: transparent;
+}
+
+.box:hover { transform: scale(1.08); }
+
+.box.checked {
+  background: var(--accent-color);
+  border-color: var(--accent-color);
+}
+
+.box svg {
+  width: 62%;
+  height: 62%;
+  fill: none;
+  stroke: var(--card-color);
+  stroke-width: 3;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  opacity: 0;
+  transform: scale(.6);
+  transition: opacity .1s ease, transform .1s ease;
+}
+
+.box.checked svg {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.empty-state {
+  font-family: var(--font-sans);
+  font-size: calc(14px * var(--size-scale));
+  color: var(--accent-color);
+}
+</style>
+</head>
+<body>
+
+<div class="card" id="card">
+  <div class="title" id="titleEl"></div>
+  <div class="grid-wrap" id="gridWrap"></div>
+</div>
+
+<script>
+/* ============================================================
+   URL PARAMETERS
+   ?habits=   pipe-separated habit names, e.g. Drink+Water|Read|Move
+   ?start=    week start day: "sunday" or "monday" (default monday)
+   ?title=    heading text (default "This Week")
+   ?card=     card color, hex without #
+   ?text=     habit name / heading color, hex without #
+   ?accent=   checked box + day letter color, hex without #
+   ?radius=   card corner roundness in px
+   ?size=     text size as a percentage, 50 to 250 (default 100)
+   ?shadow=false   hide the drop shadow
+   ?id=       optional instance id, only needed if you embed two
+              trackers with the identical habit list side by side
+   ============================================================ */
+const params = new URLSearchParams(window.location.search);
+const root = document.documentElement.style;
+const hex = v => /^[0-9a-fA-F]{3,8}$/.test(v) ? '#' + v : null;
+
+['card','text','accent'].forEach(key => {
+  const val = params.get(key);
+  if (val) {
+    const c = hex(val);
+    if (c) root.setProperty('--' + key + '-color', c);
+  }
+});
+
+const radiusParam = params.get('radius');
+if (radiusParam !== null) {
+  root.setProperty('--card-radius', /^\d+$/.test(radiusParam) ? radiusParam + 'px' : radiusParam);
+}
+
+const sizeParam = params.get('size');
+if (sizeParam !== null && !isNaN(parseFloat(sizeParam))) {
+  root.setProperty('--size-scale', (parseFloat(sizeParam) / 100).toString());
+}
+
+if (params.get('shadow') === 'false') {
+  document.getElementById('card').classList.add('flat');
+}
+
+document.getElementById('titleEl').textContent = params.get('title') || 'This Week';
+
+const startDay = (params.get('start') || 'monday').toLowerCase() === 'sunday' ? 0 : 1;
+
+const habits = (params.get('habits') || '')
+  .split('|')
+  .map(h => h.trim())
+  .filter(Boolean);
+
+/* ---------- week math ---------- */
+// Day letters ordered from the chosen start day
+const DAY_NAMES = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+const orderedDayIdx = [];
+for (let i = 0; i < 7; i++) orderedDayIdx.push((startDay + i) % 7);
+
+function weekKeyFor(date) {
+  // Find the most recent occurrence of startDay, at or before `date`
+  const d = new Date(date);
+  d.setHours(0,0,0,0);
+  const diff = (d.getDay() - startDay + 7) % 7;
+  d.setDate(d.getDate() - diff);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
+const today = new Date();
+const currentWeekKey = weekKeyFor(today);
+const todayDayIdx = today.getDay();
+
+/* ---------- storage ---------- */
+function hashStr(s) {
+  let h = 0;
+  for (let i = 0; i < s.length; i++) {
+    h = (h * 31 + s.charCodeAt(i)) | 0;
+  }
+  return Math.abs(h).toString(36);
+}
+const instanceId = params.get('id') || hashStr(habits.join('|') + '::' + startDay);
+const storageKey = 'ag-habit-tracker-' + instanceId;
+
+let state;
+try {
+  const raw = localStorage.getItem(storageKey);
+  state = raw ? JSON.parse(raw) : null;
+} catch (e) {
+  state = null;
+}
+
+if (!state || state.weekKey !== currentWeekKey) {
+  state = { weekKey: currentWeekKey, checks: {} };
+  saveState();
+}
+
+function saveState() {
+  try {
+    localStorage.setItem(storageKey, JSON.stringify(state));
+  } catch (e) { /* storage unavailable, tracking just won't persist */ }
+}
+
+/* ---------- render ---------- */
+const gridWrap = document.getElementById('gridWrap');
+
+if (!habits.length) {
+  gridWrap.innerHTML = '<div class="empty-state">Add habits in the customizer to see them here.</div>';
+} else {
+  const headRow = document.createElement('div');
+  headRow.className = 'row head-row';
+  const headSpacer = document.createElement('div');
+  headRow.appendChild(headSpacer);
+  orderedDayIdx.forEach(di => {
+    const lbl = document.createElement('div');
+    lbl.className = 'day-label' + (di === todayDayIdx ? ' today' : '');
+    lbl.textContent = DAY_NAMES[di][0];
+    headRow.appendChild(lbl);
+  });
+  gridWrap.appendChild(headRow);
+
+  habits.forEach((habitName, hIdx) => {
+    const row = document.createElement('div');
+    row.className = 'row';
+
+    const name = document.createElement('div');
+    name.className = 'habit-name';
+    name.textContent = habitName;
+    row.appendChild(name);
+
+    orderedDayIdx.forEach(di => {
+      const key = hIdx + '-' + di;
+      const box = document.createElement('div');
+      box.className = 'box' + (state.checks[key] ? ' checked' : '');
+      box.innerHTML = '<svg viewBox="0 0 24 24"><polyline points="4,13 9,18 20,6"/></svg>';
+      box.addEventListener('click', () => {
+        state.checks[key] = !state.checks[key];
+        box.classList.toggle('checked', !!state.checks[key]);
+        saveState();
+      });
+      row.appendChild(box);
+    });
+
+    gridWrap.appendChild(row);
+  });
+}
+</script>
+</body>
+</html>
