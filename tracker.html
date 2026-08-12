@@ -113,7 +113,7 @@ body {
 
 .row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) repeat(7, auto);
+  grid-template-columns: minmax(0, 1fr) repeat(7, auto) auto;
   align-items: center;
   column-gap: 1.6vmin;
   padding: 1.1vmin 0;
@@ -193,6 +193,33 @@ body {
 .box.checked svg {
   opacity: 1;
   transform: scale(1);
+}
+
+.plant-cell {
+  width: clamp(26px, 6vmin, 40px);
+  height: clamp(30px, 6.6vmin, 44px);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding-left: 0.6vmin;
+}
+
+.plant-cell svg {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.plant-cell path {
+  transition: opacity .2s ease;
+}
+
+.head-plant-icon {
+  width: clamp(26px, 6vmin, 40px);
+  height: clamp(16px, 4vmin, 26px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .empty-state {
@@ -377,6 +404,39 @@ function updateProgress() {
   progressFill.style.width = Math.min(100, (done / total) * 100) + '%';
 }
 
+/* ---------- growing plant, one per row ---------- */
+const PLANT_ANGLES = [-70, -46, -23, 0, 23, 46, 70];
+const PLANT_LENGTHS = PLANT_ANGLES.map((a, i) => 9 + (3 - Math.abs(i - 3)) * 1.3);
+
+function leafPath(angleDeg, length) {
+  const rad = angleDeg * Math.PI / 180;
+  const x2 = 16 + length * Math.sin(rad);
+  const y2 = 25 - length * Math.cos(rad);
+  const curveKick = angleDeg < 0 ? -2.2 : (angleDeg > 0 ? 2.2 : 0);
+  const cx = 16 + (length * 0.55) * Math.sin(rad) + curveKick;
+  const cy = 25 - (length * 0.55) * Math.cos(rad);
+  return `M16,25 Q${cx.toFixed(1)},${cy.toFixed(1)} ${x2.toFixed(1)},${y2.toFixed(1)}`;
+}
+
+function plantSVG(count) {
+  let leaves = '';
+  for (let i = 0; i < 7; i++) {
+    const visible = i < count;
+    leaves += `<path d="${leafPath(PLANT_ANGLES[i], PLANT_LENGTHS[i])}" stroke="var(--accent-color)" stroke-width="1.6" stroke-linecap="round" fill="none" opacity="${visible ? 1 : 0}"/>`;
+  }
+  const budRadius = count >= 7 ? 3 : 1.6;
+  const budOpacity = count > 0 ? 1 : 0.35;
+  return `<svg viewBox="0 0 32 30" xmlns="http://www.w3.org/2000/svg">
+    <line x1="8" y1="27.5" x2="24" y2="27.5" stroke="var(--accent-color)" stroke-width="1" opacity="0.25"/>
+    ${leaves}
+    <circle cx="16" cy="25" r="${budRadius}" fill="var(--accent-color)" opacity="${budOpacity}"/>
+  </svg>`;
+}
+
+function rowCheckedCount(hIdx) {
+  return orderedDayIdx.reduce((n, di) => n + (state.checks[hIdx + '-' + di] ? 1 : 0), 0);
+}
+
 if (!habits.length) {
   gridWrap.innerHTML = '<div class="empty-state">Add habits in the customizer to see them here.</div>';
   progressWrap.style.display = 'none';
@@ -391,6 +451,9 @@ if (!habits.length) {
     lbl.textContent = DAY_NAMES[di][0];
     headRow.appendChild(lbl);
   });
+  const headPlantSpacer = document.createElement('div');
+  headPlantSpacer.className = 'head-plant-icon';
+  headRow.appendChild(headPlantSpacer);
   gridWrap.appendChild(headRow);
 
   habits.forEach((habitName, hIdx) => {
@@ -402,6 +465,10 @@ if (!habits.length) {
     name.textContent = habitName;
     row.appendChild(name);
 
+    const plantCell = document.createElement('div');
+    plantCell.className = 'plant-cell';
+    plantCell.innerHTML = plantSVG(rowCheckedCount(hIdx));
+
     orderedDayIdx.forEach(di => {
       const key = hIdx + '-' + di;
       const box = document.createElement('div');
@@ -412,10 +479,12 @@ if (!habits.length) {
         box.classList.toggle('checked', !!state.checks[key]);
         saveState();
         updateProgress();
+        plantCell.innerHTML = plantSVG(rowCheckedCount(hIdx));
       });
       row.appendChild(box);
     });
 
+    row.appendChild(plantCell);
     gridWrap.appendChild(row);
   });
 
