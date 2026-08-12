@@ -22,22 +22,28 @@
     background: var(--bg);
     font-family: var(--font-sans);
     color: var(--ink);
-    min-height: 100vh;
+    height: 100vh;
+    overflow: hidden;
   }
   .wrap {
     display: grid;
     grid-template-columns: 380px 1fr;
-    min-height: 100vh;
+    height: 100vh;
   }
   @media (max-width: 860px) {
-    .wrap { grid-template-columns: 1fr; }
+    body { height: auto; overflow: visible; }
+    .wrap { grid-template-columns: 1fr; height: auto; }
   }
 
   .panel {
     background: var(--panel);
     padding: 32px 28px 60px;
     border-right: 1px solid var(--line);
+    height: 100vh;
     overflow-y: auto;
+  }
+  @media (max-width: 860px) {
+    .panel { height: auto; overflow-y: visible; }
   }
   h1 {
     font-family: var(--font-serif);
@@ -253,9 +259,14 @@
 
   .preview {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     justify-content: center;
-    padding: 40px;
+    padding: 56px 40px;
+    height: 100vh;
+    overflow: hidden;
+  }
+  @media (max-width: 860px) {
+    .preview { height: auto; align-items: center; }
   }
   .preview-frame-wrap {
     width: min(420px, 90vw);
@@ -372,21 +383,7 @@
    Replace this with wherever tracker.html ends up living,
    e.g. https://your-site.netlify.app/ag-habit-tracker/tracker.html
    ============================================================ */
-const RENDERER_URL = '/tracker.html';
-
-/* Every generated tracker gets its own stable browser-storage namespace. */
-const TRACKER_INSTANCE_ID = (() => {
-  try {
-    const saved = sessionStorage.getItem('ag-tracker-draft-id');
-    if (saved) return saved;
-    const created = (crypto.randomUUID ? crypto.randomUUID() :
-      Date.now().toString(36) + '-' + Math.random().toString(36).slice(2));
-    sessionStorage.setItem('ag-tracker-draft-id', created);
-    return created;
-  } catch (e) {
-    return Date.now().toString(36) + '-' + Math.random().toString(36).slice(2);
-  }
-})();
+const RENDERER_URL = 'tracker.html';
 
 const SCHEMES = [
   { name: 'Sage',      card: 'A6A38B', text: 'FFFFFF', accent: 'E9E7DE' },
@@ -585,7 +582,6 @@ function buildUrl() {
   params.set('accent', accentHex.value || '8A7B69');
   params.set('radius', radiusRange.value);
   params.set('size', sizeRange.value);
-  params.set('id', TRACKER_INSTANCE_ID);
   if (!shadowOn) params.set('shadow', 'false');
 
   return RENDERER_URL + '?' + params.toString();
