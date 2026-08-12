@@ -37,6 +37,8 @@
   /* FONTS */
   --font-serif: 'Cormorant Garamond', Georgia, serif;
   --font-sans: 'Jost', 'Helvetica Neue', sans-serif;
+  --font-title: var(--font-serif);
+  --font-habit: var(--font-sans);
 }
 /* ============================================================ */
 
@@ -72,7 +74,7 @@ body {
 .card.flat { box-shadow: none; }
 
 .title {
-  font-family: var(--font-serif);
+  font-family: var(--font-title);
   font-weight: 600;
   font-size: calc(clamp(16px, 4.6vmin, 28px) * var(--size-scale));
   color: var(--text-color);
@@ -103,7 +105,7 @@ body {
 }
 
 .habit-name {
-  font-family: var(--font-sans);
+  font-family: var(--font-habit);
   font-weight: 400;
   font-size: calc(clamp(11px, 2.9vmin, 15px) * var(--size-scale));
   color: var(--text-color);
@@ -121,11 +123,26 @@ body {
   color: var(--accent-color);
   text-align: center;
   width: clamp(16px, 4vmin, 26px);
+  position: relative;
 }
 
 .day-label.today {
-  color: var(--text-color);
-  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.day-label.today::before {
+  content: '';
+  position: absolute;
+  width: clamp(20px, 4.6vmin, 30px);
+  height: clamp(20px, 4.6vmin, 30px);
+  border-radius: 50%;
+  border: 1.2px solid var(--accent-color);
+}
+
+.day-label.today span {
+  position: relative;
 }
 
 .box {
@@ -192,12 +209,55 @@ body {
    ?radius=   card corner roundness in px
    ?size=     text size as a percentage, 50 to 250 (default 100)
    ?shadow=false   hide the drop shadow
+   ?titleFont=  Google Font name for the title, e.g. "Playfair+Display"
+   ?habitFont=  Google Font name for habit names, e.g. "Jost"
    ?id=       optional instance id, only needed if you embed two
               trackers with the identical habit list side by side
    ============================================================ */
 const params = new URLSearchParams(window.location.search);
 const root = document.documentElement.style;
 const hex = v => /^[0-9a-fA-F]{3,8}$/.test(v) ? '#' + v : null;
+
+/* Weight strings for each curated font, so only what's needed loads */
+const FONT_WEIGHTS = {
+  'Cormorant Garamond': 'wght@500;600',
+  'Playfair Display': 'wght@500;600',
+  'Lora': 'wght@400;500;600',
+  'Libre Baskerville': 'wght@400;700',
+  'EB Garamond': 'wght@400;500;600',
+  'Cormorant': 'wght@500;600',
+  'Jost': 'wght@300;400;500',
+  'Montserrat': 'wght@400;500;600',
+  'Inter': 'wght@400;500;600',
+  'Poppins': 'wght@400;500;600',
+  'Caveat': 'wght@500;600',
+  'Dancing Script': 'wght@500;600'
+};
+
+function loadGoogleFont(name) {
+  if (!name || !FONT_WEIGHTS[name]) return;
+  const id = 'gf-' + name.replace(/\s+/g, '-');
+  if (document.getElementById(id)) return;
+  const link = document.createElement('link');
+  link.id = id;
+  link.rel = 'stylesheet';
+  link.href = 'https://fonts.googleapis.com/css2?family=' + name.replace(/\s+/g, '+') + ':' + FONT_WEIGHTS[name] + '&display=swap';
+  document.head.appendChild(link);
+}
+
+const titleFontParam = params.get('titleFont');
+if (titleFontParam) {
+  const name = titleFontParam.replace(/\+/g, ' ');
+  loadGoogleFont(name);
+  root.setProperty('--font-title', `'${name}', ` + (['Caveat','Dancing Script'].includes(name) ? 'cursive' : 'serif'));
+}
+
+const habitFontParam = params.get('habitFont');
+if (habitFontParam) {
+  const name = habitFontParam.replace(/\+/g, ' ');
+  loadGoogleFont(name);
+  root.setProperty('--font-habit', `'${name}', ` + (['Caveat','Dancing Script'].includes(name) ? 'cursive' : 'sans-serif'));
+}
 
 ['card','text','accent'].forEach(key => {
   const val = params.get(key);
@@ -295,7 +355,7 @@ if (!habits.length) {
   orderedDayIdx.forEach(di => {
     const lbl = document.createElement('div');
     lbl.className = 'day-label' + (di === todayDayIdx ? ' today' : '');
-    lbl.textContent = DAY_NAMES[di][0];
+    lbl.innerHTML = '<span>' + DAY_NAMES[di][0] + '</span>';
     headRow.appendChild(lbl);
   });
   gridWrap.appendChild(headRow);

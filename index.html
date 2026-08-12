@@ -6,6 +6,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600&family=Jost:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600&family=Playfair+Display:wght@500;600&family=Lora:wght@400;500;600&family=Libre+Baskerville:wght@400;700&family=EB+Garamond:wght@400;500;600&family=Cormorant:wght@500;600&family=Jost:wght@300;400;500;600&family=Montserrat:wght@400;500;600&family=Inter:wght@400;500;600&family=Poppins:wght@400;500;600&family=Caveat:wght@500;600&family=Dancing+Script:wght@500;600&display=swap" rel="stylesheet">
 <style>
   :root {
     --bg: #FAF6EF;
@@ -131,6 +132,17 @@
     color: #FAF6EF;
   }
 
+  .font-select {
+    width: 100%;
+    font-size: 15px;
+    color: var(--ink);
+    background: var(--bg);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 9px 11px;
+    cursor: pointer;
+  }
+
   .scheme-grid {
     display: grid;
     grid-template-columns: repeat(6, 1fr);
@@ -152,6 +164,45 @@
     width: 7px;
     height: 7px;
     border-radius: 50%;
+  }
+
+  .color-row {
+    display: flex;
+    gap: 14px;
+  }
+  .color-field {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+  }
+  .color-field input[type="color"] {
+    width: 100%;
+    height: 34px;
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 0;
+    cursor: pointer;
+    background: none;
+  }
+  .hex-input {
+    width: 100%;
+    font-family: monospace;
+    font-size: 11px;
+    text-align: center;
+    text-transform: uppercase;
+    color: var(--ink);
+    background: var(--bg);
+    border: 1px solid var(--line);
+    border-radius: 5px;
+    padding: 4px 6px;
+  }
+  .color-caption {
+    font-size: 10px;
+    color: var(--ink-soft);
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
   }
 
   .slider-row {
@@ -230,6 +281,16 @@
     </div>
 
     <div class="field">
+      <label for="titleFontSelect">Title font</label>
+      <select id="titleFontSelect" class="font-select"></select>
+    </div>
+
+    <div class="field">
+      <label for="habitFontSelect">Habit font</label>
+      <select id="habitFontSelect" class="font-select"></select>
+    </div>
+
+    <div class="field">
       <label>Habits</label>
       <div id="habitList"></div>
       <button type="button" class="add-btn" id="addHabit">+ Add habit</button>
@@ -246,6 +307,28 @@
     <div class="field">
       <label>Color scheme</label>
       <div class="scheme-grid" id="schemeGrid"></div>
+      <div class="hint">Pick a preset, then fine-tune any of the three colors below if you want something more custom.</div>
+    </div>
+
+    <div class="field">
+      <label>Custom colors</label>
+      <div class="color-row">
+        <div class="color-field">
+          <input type="color" id="cardColorPicker" value="#FAF6EF">
+          <input type="text" id="cardColorHex" class="hex-input" value="FAF6EF" maxlength="6">
+          <span class="color-caption">Card</span>
+        </div>
+        <div class="color-field">
+          <input type="color" id="textColorPicker" value="#2E2823">
+          <input type="text" id="textColorHex" class="hex-input" value="2E2823" maxlength="6">
+          <span class="color-caption">Text</span>
+        </div>
+        <div class="color-field">
+          <input type="color" id="accentColorPicker" value="#8A7B69">
+          <input type="text" id="accentColorHex" class="hex-input" value="8A7B69" maxlength="6">
+          <span class="color-caption">Accent</span>
+        </div>
+      </div>
     </div>
 
     <div class="field">
@@ -301,6 +384,44 @@ const SCHEMES = [
 ];
 
 let schemeIdx = 3; // Cream default
+
+const cardPicker = document.getElementById('cardColorPicker');
+const cardHex = document.getElementById('cardColorHex');
+const textPicker = document.getElementById('textColorPicker');
+const textHex = document.getElementById('textColorHex');
+const accentPicker = document.getElementById('accentColorPicker');
+const accentHex = document.getElementById('accentColorHex');
+
+function linkColorPair(picker, hexInput) {
+  picker.addEventListener('input', () => {
+    hexInput.value = picker.value.slice(1).toUpperCase();
+    clearSchemeHighlight();
+    update();
+  });
+  hexInput.addEventListener('input', () => {
+    const clean = hexInput.value.replace(/[^0-9a-fA-F]/g, '').slice(0, 6);
+    hexInput.value = clean;
+    if (clean.length === 6) {
+      picker.value = '#' + clean;
+      clearSchemeHighlight();
+      update();
+    }
+  });
+}
+linkColorPair(cardPicker, cardHex);
+linkColorPair(textPicker, textHex);
+linkColorPair(accentPicker, accentHex);
+
+function clearSchemeHighlight() {
+  schemeIdx = -1;
+  [...schemeGrid.children].forEach(c => c.classList.remove('active'));
+}
+
+function applySchemeToPickers(s) {
+  cardPicker.value = '#' + s.card; cardHex.value = s.card;
+  textPicker.value = '#' + s.text; textHex.value = s.text;
+  accentPicker.value = '#' + s.accent; accentHex.value = s.accent;
+}
 let startDay = 'monday';
 let shadowOn = true;
 
@@ -344,10 +465,12 @@ SCHEMES.forEach((s, i) => {
     schemeIdx = i;
     [...schemeGrid.children].forEach(c => c.classList.remove('active'));
     btn.classList.add('active');
+    applySchemeToPickers(s);
     update();
   });
   schemeGrid.appendChild(btn);
 });
+applySchemeToPickers(SCHEMES[schemeIdx]);
 
 document.getElementById('startMonday').addEventListener('click', e => {
   startDay = 'monday';
@@ -392,6 +515,43 @@ sizeRange.addEventListener('input', () => {
 const titleInput = document.getElementById('titleInput');
 titleInput.addEventListener('input', update);
 
+/* ---------- font pickers ---------- */
+const FONTS = [
+  { name: 'Cormorant Garamond', style: 'serif' },
+  { name: 'Playfair Display',   style: 'serif' },
+  { name: 'Lora',                style: 'serif' },
+  { name: 'Libre Baskerville',  style: 'serif' },
+  { name: 'EB Garamond',        style: 'serif' },
+  { name: 'Cormorant',          style: 'serif' },
+  { name: 'Jost',               style: 'sans-serif' },
+  { name: 'Montserrat',         style: 'sans-serif' },
+  { name: 'Inter',              style: 'sans-serif' },
+  { name: 'Poppins',            style: 'sans-serif' },
+  { name: 'Caveat',             style: 'cursive' },
+  { name: 'Dancing Script',     style: 'cursive' }
+];
+
+function populateFontSelect(selectEl, defaultName) {
+  FONTS.forEach(f => {
+    const opt = document.createElement('option');
+    opt.value = f.name;
+    opt.textContent = f.name;
+    opt.style.fontFamily = `'${f.name}', ${f.style}`;
+    if (f.name === defaultName) opt.selected = true;
+    selectEl.appendChild(opt);
+  });
+  selectEl.style.fontFamily = `'${defaultName}', ` + (FONTS.find(f => f.name === defaultName) || {}).style;
+  selectEl.addEventListener('change', () => {
+    selectEl.style.fontFamily = `'${selectEl.value}', ` + (FONTS.find(f => f.name === selectEl.value) || {}).style;
+    update();
+  });
+}
+
+const titleFontSelect = document.getElementById('titleFontSelect');
+const habitFontSelect = document.getElementById('habitFontSelect');
+populateFontSelect(titleFontSelect, 'Cormorant Garamond');
+populateFontSelect(habitFontSelect, 'Jost');
+
 const previewFrame = document.getElementById('previewFrame');
 const urlBox = document.getElementById('urlBox');
 const copyBtn = document.getElementById('copyBtn');
@@ -400,15 +560,15 @@ function buildUrl() {
   const habits = [...habitList.querySelectorAll('.habit-input')]
     .map(i => i.value.trim())
     .filter(Boolean);
-  const scheme = SCHEMES[schemeIdx];
-
   const params = new URLSearchParams();
   if (habits.length) params.set('habits', habits.join('|'));
   params.set('start', startDay);
   params.set('title', titleInput.value || 'This Week');
-  params.set('card', scheme.card);
-  params.set('text', scheme.text);
-  params.set('accent', scheme.accent);
+  params.set('titleFont', titleFontSelect.value.replace(/\s+/g, '+'));
+  params.set('habitFont', habitFontSelect.value.replace(/\s+/g, '+'));
+  params.set('card', cardHex.value || 'FAF6EF');
+  params.set('text', textHex.value || '2E2823');
+  params.set('accent', accentHex.value || '8A7B69');
   params.set('radius', radiusRange.value);
   params.set('size', sizeRange.value);
   if (!shadowOn) params.set('shadow', 'false');
