@@ -372,7 +372,21 @@
    Replace this with wherever tracker.html ends up living,
    e.g. https://your-site.netlify.app/ag-habit-tracker/tracker.html
    ============================================================ */
-const RENDERER_URL = 'tracker.html';
+const RENDERER_URL = '/tracker.html';
+
+/* Every generated tracker gets its own stable browser-storage namespace. */
+const TRACKER_INSTANCE_ID = (() => {
+  try {
+    const saved = sessionStorage.getItem('ag-tracker-draft-id');
+    if (saved) return saved;
+    const created = (crypto.randomUUID ? crypto.randomUUID() :
+      Date.now().toString(36) + '-' + Math.random().toString(36).slice(2));
+    sessionStorage.setItem('ag-tracker-draft-id', created);
+    return created;
+  } catch (e) {
+    return Date.now().toString(36) + '-' + Math.random().toString(36).slice(2);
+  }
+})();
 
 const SCHEMES = [
   { name: 'Sage',      card: 'A6A38B', text: 'FFFFFF', accent: 'E9E7DE' },
@@ -571,6 +585,7 @@ function buildUrl() {
   params.set('accent', accentHex.value || '8A7B69');
   params.set('radius', radiusRange.value);
   params.set('size', sizeRange.value);
+  params.set('id', TRACKER_INSTANCE_ID);
   if (!shadowOn) params.set('shadow', 'false');
 
   return RENDERER_URL + '?' + params.toString();
