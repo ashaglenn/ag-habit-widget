@@ -337,7 +337,13 @@ function hashStr(s) {
   }
   return Math.abs(h).toString(36);
 }
-const instanceId = params.get('id') || hashStr(habits.join('|') + '::' + startDay);
+const instanceId = params.get('id') || hashStr(
+  habits.join('|') + '::' + startDay + '::' +
+  (params.get('title') || '') + '::' +
+  (params.get('card') || '') + '::' +
+  (params.get('text') || '') + '::' +
+  (params.get('accent') || '')
+);
 const storageKey = 'ag-habit-tracker-' + instanceId;
 
 let state;
